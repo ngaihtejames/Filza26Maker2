@@ -1,15 +1,15 @@
 #!/bin/bash
 # WSL / Ubuntu-ready Filza DEB → IPA builder
-# Works for iOS 18 / iOS 26 jailed Filza
+# Works for IOS 18 / IOS 26 jailed Filza
 
 set -eo pipefail
 
 # CONFIG
 DEB_URL="${1:-https://tigisoftware.com/cydia/com.tigisoftware.filza_4.0.1-2_iphoneos-arm.deb}"
-WIN_DESKTOP="/mnt/c/Users/Jeff/Desktop"
+WIN_DESKTOP="/mnt/c/Users/$(cmd.exe /c "echo %USERNAME%" | tr -d '\r')/Desktop"
 WORKDIR="$(mktemp -d)"
 DEB_LOCAL="$WORKDIR/filza.deb"
-IPA_NAME="Filza-Jailed-iOS26-GeoSn0w.ipa"
+IPA_NAME="Filza-Jailed-26-UncleTyrone.ipa"
 
 echo "[ i ] Working dir: $WORKDIR"
 echo "[ i ] Target DEB URL: $DEB_URL"
@@ -73,7 +73,7 @@ cd ..
 
 # move IPA to Windows Desktop
 echo "[ i ] Moving IPA to Windows Desktop: $WIN_DESKTOP/$IPA_NAME"
-mv "$IPA_NAME" "$WIN_DESKTOP/"
+cp -f "$IPA_NAME" "$WIN_DESKTOP/" && rm -f "$IPA_NAME"
 
 # cleanup
 echo "[ i ] Cleaning up temporary files..."
