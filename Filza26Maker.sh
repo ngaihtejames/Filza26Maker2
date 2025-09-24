@@ -67,9 +67,7 @@ rm -rf Payload/Filza.app/_CodeSignature 2>/dev/null || true
 rm -f Payload/Filza.app/embedded.mobileprovision 2>/dev/null || true
 
 echo "[ i ] Creating IPA (zip)..."
-cd Payload
-zip -r "../$IPA_NAME" . > /dev/null
-cd ..
+zip -r "$IPA_NAME" Payload > /dev/null
 
 # move IPA to Windows Desktop
 echo "[ i ] Moving IPA to Windows Desktop: $WIN_DESKTOP/$IPA_NAME"
