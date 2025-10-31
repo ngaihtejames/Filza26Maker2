@@ -1,62 +1,71 @@
-name: Filza26Maker Auto Build
+name: 📦 Build Filza26Maker (Auto .ipa Repack)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # lets you run it manually
+    inputs:
+      filza_url:
+        description: "Optional: custom Filza .deb URL (leave empty for TiGi default)"
+        required: false
+        default: ""
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 🧩 Checkout repository
+      - name: 🧰 Checkout repository
         uses: actions/checkout@v4
+
+      - name: 🧱 Prepare fake Desktop directory (for macOS scripts)
+        run: |
+          mkdir -p ~/Desktop
+          echo "Created fake Desktop folder to catch script output."
 
       - name: ⚙️ Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip zip wget curl tar p7zip-full
+          sudo apt update
+          sudo apt install -y wget curl zip unzip tar ar coreutils
 
-      - name: 🧠 Info
+      - name: 🌐 Download Filza tweak from TiGi Software
         run: |
-          echo "-----------------------------------------------------------"
-          echo "📦 Filza26Maker Auto Build"
-          echo "This workflow repackages the official Filza tweak (.deb)"
-          echo "into a jailed .ipa using your Filza26Maker.sh script."
-          echo "It does NOT inject or modify tweaks — only repackages them."
-          echo "-----------------------------------------------------------"
+          echo "Fetching Filza tweak package..."
+          if [ -n "${{ github.event.inputs.filza_url }}" ]; then
+            echo "Using custom URL: ${{ github.event.inputs.filza_url }}"
+            wget -O Filza.deb "${{ github.event.inputs.filza_url }}" || true
+          fi
 
-      - name: 🪄 Make script executable
-        run: chmod +x ./Filza26Maker.sh
+          if [ ! -f "Filza.deb" ]; then
+            echo "No custom URL or failed download — using default TiGi source."
+            wget -O Filza.deb https://tigisoftware.com/repo/Filza.deb || \
+            wget -O Filza.deb https://tigisoftware.com/repo/com.tigisoftware.filza_3.9.6_iphoneos-arm.deb
+          fi
+
+          ls -lh Filza.deb
+          echo "✅ Filza tweak downloaded successfully."
 
       - name: 🚀 Run Filza26Maker
         run: |
           echo "Starting Filza26Maker build..."
-          ./Filza26Maker.sh || echo "⚠️ Script exited with a warning or finished early."
+          chmod +x ./Filza26Maker.sh
+          ./Filza26Maker.sh Filza.deb || ./Filza26Maker.sh
           echo "Build script finished."
 
       - name: 📂 Detect and zip output
         run: |
           mkdir -p final_output
-          echo "Collecting build outputs..."
+          echo "Searching for Filza build results..."
+          find ~/Desktop -type f -name "*.ipa" -exec cp {} final_output/ \; || true
+          find . -type f -name "*.ipa" -exec cp {} final_output/ \; || true
 
-          # Copy typical output files or folders
-          find . -maxdepth 2 -type f \( -name "*.ipa" -o -name "*.zip" \) -exec cp {} final_output/ \; || true
-          find . -maxdepth 2 -type d \( -name "output" -o -name "build" -o -name "dist" -o -name "Payload" \) -exec cp -r {} final_output/ \; || true
-
-          # If nothing found, zip entire workspace
-          if [ -z "$(ls -A final_output)" ]; then
-            echo "No specific outputs found — zipping full workspace."
-            zip -r Filza26_AllFiles.zip .
-            mv Filza26_AllFiles.zip final_output/
+          if [ "$(ls -A final_output)" ]; then
+            cd final_output
+            zip -r Filza26_Output.zip ./*
+            echo "✅ Output packaged successfully."
+          else
+            echo "⚠️ No IPA output found."
           fi
-
-          # Final zip for upload
-          zip -r Filza26_Output.zip final_output
-
-          echo "✅ Build complete. Output packaged as Filza26_Output.zip"
 
       - name: 📤 Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Filza26_output
+          name: Filza26_Build
           path: final_output/Filza26_Output.zip
